@@ -2,7 +2,8 @@
 import React from 'react';
 import { BrickType, ToolMode, BrickDims } from '../types';
 import { LEGO_COLORS } from '../constants';
-import { MousePointer2, PaintBucket, Trash2, HelpCircle, PlusSquare } from 'lucide-react';
+import { MousePointer2, PaintBucket, Trash2, HelpCircle, PlusSquare, Camera, BarChart3, Bomb } from 'lucide-react';
+import { playSound } from '../utils/audio';
 
 interface ToolbarProps {
   selectedBrickType: BrickType;
@@ -14,6 +15,9 @@ interface ToolbarProps {
   onGenerateChallenge: () => void;
   onToggleHelp: () => void;
   onOpenCreator: () => void;
+  onTakeSnapshot: () => void;
+  onToggleStats: () => void;
+  onExplode: () => void;
   isLoading: boolean;
   definitions: Record<string, BrickDims>;
 }
@@ -28,6 +32,9 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onGenerateChallenge,
   onToggleHelp,
   onOpenCreator,
+  onTakeSnapshot,
+  onToggleStats,
+  onExplode,
   isLoading,
   definitions
 }) => {
@@ -58,6 +65,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
     <button
       key={type}
       onClick={() => {
+        playSound('click');
         setToolMode(ToolMode.BUILD);
         setSelectedBrickType(type);
       }}
@@ -90,10 +98,13 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <h1 className="text-2xl font-bold text-retro-yellow tracking-widest drop-shadow-[0_0_5px_rgba(255,215,0,0.5)]">
             BRICKMASTER
           </h1>
-          <span className="text-xs text-retro-cyan animate-pulse">SYSTEM READY v1.1</span>
+          <span className="text-xs text-retro-cyan animate-pulse">SYSTEM READY v1.2</span>
         </div>
         <button 
-          onClick={onToggleHelp}
+          onClick={() => {
+            playSound('click');
+            onToggleHelp();
+          }}
           className="text-retro-cyan hover:text-white hover:scale-110 transition-transform"
           title="Controls Help"
         >
@@ -109,25 +120,70 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <h2 className="text-retro-cyan text-sm uppercase tracking-wider mb-2 border-l-2 border-retro-neon pl-2">Tools</h2>
           <div className="grid grid-cols-3 gap-2">
             <button 
-              onClick={() => setToolMode(ToolMode.BUILD)}
+              onClick={() => {
+                playSound('click');
+                setToolMode(ToolMode.BUILD);
+              }}
               className={`p-3 rounded border-2 flex justify-center items-center transition-all ${toolMode === ToolMode.BUILD ? 'border-retro-yellow bg-retro-accent text-retro-yellow shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 'border-slate-600 text-slate-400 hover:border-retro-cyan'}`}
               title="Build Mode"
             >
               <MousePointer2 size={20} />
             </button>
             <button 
-              onClick={() => setToolMode(ToolMode.PAINT)}
+              onClick={() => {
+                playSound('click');
+                setToolMode(ToolMode.PAINT);
+              }}
               className={`p-3 rounded border-2 flex justify-center items-center transition-all ${toolMode === ToolMode.PAINT ? 'border-retro-yellow bg-retro-accent text-retro-yellow shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 'border-slate-600 text-slate-400 hover:border-retro-cyan'}`}
               title="Paint Mode"
             >
               <PaintBucket size={20} />
             </button>
             <button 
-              onClick={() => setToolMode(ToolMode.DELETE)}
+              onClick={() => {
+                playSound('click');
+                setToolMode(ToolMode.DELETE);
+              }}
               className={`p-3 rounded border-2 flex justify-center items-center transition-all ${toolMode === ToolMode.DELETE ? 'border-retro-neon bg-red-900/30 text-retro-neon shadow-[0_0_10px_rgba(233,69,96,0.5)]' : 'border-slate-600 text-slate-400 hover:border-retro-neon'}`}
               title="Delete Mode"
             >
               <Trash2 size={20} />
+            </button>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="space-y-3">
+          <h2 className="text-retro-cyan text-sm uppercase tracking-wider mb-2 border-l-2 border-retro-neon pl-2">Operations</h2>
+          <div className="grid grid-cols-3 gap-2">
+            <button 
+              onClick={() => {
+                playSound('click');
+                onTakeSnapshot();
+              }}
+              className="p-3 rounded border-2 border-slate-600 text-slate-400 hover:border-retro-cyan hover:text-retro-cyan hover:bg-slate-800 transition-all flex justify-center"
+              title="Snapshot"
+            >
+              <Camera size={20} />
+            </button>
+            <button 
+              onClick={() => {
+                playSound('click');
+                onToggleStats();
+              }}
+              className="p-3 rounded border-2 border-slate-600 text-slate-400 hover:border-green-400 hover:text-green-400 hover:bg-slate-800 transition-all flex justify-center"
+              title="Data Analyzer"
+            >
+              <BarChart3 size={20} />
+            </button>
+            <button 
+              onClick={() => {
+                onExplode();
+              }}
+              className="p-3 rounded border-2 border-slate-600 text-red-500 hover:border-red-500 hover:bg-red-900/30 hover:scale-105 active:scale-95 transition-all flex justify-center"
+              title="SYSTEM RESET (EXPLODE)"
+            >
+              <Bomb size={20} />
             </button>
           </div>
         </div>
@@ -137,7 +193,10 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <div className="flex justify-between items-center border-l-2 border-retro-neon pl-2">
              <h2 className="text-retro-cyan text-sm uppercase tracking-wider">Components</h2>
              <button 
-               onClick={onOpenCreator}
+               onClick={() => {
+                 playSound('click');
+                 onOpenCreator();
+               }}
                className="text-[10px] flex items-center gap-1 bg-retro-accent hover:bg-retro-cyan hover:text-black text-retro-cyan px-2 py-1 rounded border border-retro-cyan/50 transition-all"
              >
                <PlusSquare size={12} /> CREATE
@@ -186,7 +245,10 @@ const Toolbar: React.FC<ToolbarProps> = ({
             {LEGO_COLORS.map((c) => (
               <button
                 key={c.hex}
-                onClick={() => setSelectedColor(c.hex)}
+                onClick={() => {
+                  playSound('click');
+                  setSelectedColor(c.hex);
+                }}
                 className={`w-8 h-8 rounded-sm border-2 transition-transform hover:scale-110 ${selectedColor === c.hex ? 'border-white scale-110 shadow-lg' : 'border-transparent'}`}
                 style={{ backgroundColor: c.hex }}
                 title={c.name}
@@ -204,7 +266,10 @@ const Toolbar: React.FC<ToolbarProps> = ({
           Mission Control
         </h2>
         <button
-          onClick={onGenerateChallenge}
+          onClick={() => {
+            playSound('click');
+            onGenerateChallenge();
+          }}
           disabled={isLoading}
           className="w-full py-3 px-4 bg-retro-neon text-white font-bold uppercase tracking-widest border-b-4 border-red-800 hover:bg-red-500 hover:border-red-700 active:translate-y-1 active:border-b-0 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >

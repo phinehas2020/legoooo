@@ -1,7 +1,8 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { RoundedBox } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
 import { BrickData, BrickDims } from '../types';
 import { STUD_HEIGHT, STUD_RADIUS, STUD_SIZE } from '../constants';
 
@@ -13,9 +14,50 @@ interface Brick3DProps {
   onPointerOut?: (e: THREE.ThreeEvent<MouseEvent>) => void;
   onPointerMove?: (e: THREE.ThreeEvent<PointerEvent>) => void;
   isGhost?: boolean;
+  isExploding?: boolean;
 }
 
-const Brick3D: React.FC<Brick3DProps> = ({ data, definitions, onClick, onPointerOver, onPointerOut, onPointerMove, isGhost }) => {
+const Brick3D: React.FC<Brick3DProps> = ({ 
+  data, 
+  definitions, 
+  onClick, 
+  onPointerOver, 
+  onPointerOut, 
+  onPointerMove, 
+  isGhost,
+  isExploding 
+}) => {
+  const groupRef = useRef<THREE.Group>(null);
+  // Random explosion velocity vector calculated once per brick
+  const velocity = useMemo(() => {
+    if (!isExploding) return new THREE.Vector3(0,0,0);
+    return new THREE.Vector3(
+      (Math.random() - 0.5) * 1, 
+      Math.random() * 1, 
+      (Math.random() - 0.5) * 1
+    );
+  }, [isExploding]);
+
+  const rotationVelocity = useMemo(() => {
+    if (!isExploding) return new THREE.Vector3(0,0,0);
+    return new THREE.Vector3(
+      Math.random() * 0.2,
+      Math.random() * 0.2,
+      Math.random() * 0.2
+    );
+  }, [isExploding]);
+
+  useFrame(() => {
+    if (isExploding && groupRef.current) {
+      groupRef.current.position.add(velocity);
+      groupRef.current.rotation.x += rotationVelocity.x;
+      groupRef.current.rotation.y += rotationVelocity.y;
+      groupRef.current.rotation.z += rotationVelocity.z;
+      // Add gravity effect
+      velocity.y -= 0.02; 
+    }
+  });
+
   const def = definitions[data.type];
   
   // Fallback if definition is missing (e.g. if custom type was deleted but brick remains)
@@ -70,11 +112,12 @@ const Brick3D: React.FC<Brick3DProps> = ({ data, definitions, onClick, onPointer
 
   return (
     <group
+      ref={groupRef}
       position={data.position}
       rotation={[0, data.rotation * (Math.PI / 2), 0]}
       onClick={(e) => {
         // Only stop propagation if we are not a ghost (ghosts shouldn't receive clicks anyway due to raycast null)
-        if (!isGhost) {
+        if (!isGhost && !isExploding) {
           e.stopPropagation();
           onClick && onClick(e, data.id);
         }

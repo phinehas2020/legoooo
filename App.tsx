@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Scene from './components/Scene';
 import Toolbar from './components/Toolbar';
 import { BrickData, BrickType, ToolMode, Challenge, BrickDims } from './types';
-import { LEGO_COLORS, DEFAULT_BRICK_DEFINITIONS, BRICK_HEIGHT, PLATE_HEIGHT } from './constants';
+import { LEGO_COLORS, DEFAULT_BRICK_DEFINITIONS, BRICK_HEIGHT, PLATE_HEIGHT, STUD_SIZE } from './constants';
 import { generateChallenge } from './services/geminiService';
-import { X, MousePointer2, RotateCw, Move, ChevronUp, Save } from 'lucide-react';
+import { X, MousePointer2, RotateCw, Move, ChevronUp, Save, Download, HardDrive } from 'lucide-react';
+import { playSound } from './utils/audio';
 
 const App: React.FC = () => {
   const [bricks, setBricks] = useState<BrickData[]>([]);
@@ -20,6 +21,14 @@ const App: React.FC = () => {
   const [showChallenge, setShowChallenge] = useState(false);
   const [showHelp, setShowHelp] = useState(true);
   const [showCreator, setShowCreator] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+  
+  // Snapshot state
+  const [snapshotImg, setSnapshotImg] = useState<string | null>(null);
+  const sceneActionRef = useRef<{ capture: () => string } | null>(null);
+
+  // Explosion state
+  const [isExploding, setIsExploding] = useState(false);
 
   // Creator State
   const [newPieceName, setNewPieceName] = useState('');
@@ -39,6 +48,25 @@ const App: React.FC = () => {
       console.error(e);
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleExplode = () => {
+    if (bricks.length === 0) return;
+    playSound('explode');
+    setIsExploding(true);
+    setTimeout(() => {
+      setBricks([]);
+      setIsExploding(false);
+      setLockedLayer(null);
+    }, 1500); // Clear after animation
+  };
+
+  const handleTakeSnapshot = () => {
+    if (sceneActionRef.current) {
+      playSound('shutter');
+      const imgData = sceneActionRef.current.capture();
+      setSnapshotImg(imgData);
     }
   };
 
@@ -85,6 +113,33 @@ const App: React.FC = () => {
     setNewPieceStyle('brick');
   };
 
+  // Stats Calculations
+  const calculateStats = () => {
+    let totalStuds = 0;
+    let totalWeight = 0;
+    const colorCounts: Record<string, number> = {};
+    
+    bricks.forEach(b => {
+      const def = brickDefinitions[b.type];
+      if (!def) return;
+      const studs = def.width * def.depth;
+      totalStuds += studs;
+      
+      // Rough volume estimate for weight/price
+      const volume = studs * def.height;
+      totalWeight += volume;
+
+      colorCounts[b.color] = (colorCounts[b.color] || 0) + 1;
+    });
+
+    // 1999 Pricing Algorithm: ~10 cents per piece average
+    const estimatedPrice = (bricks.length * 0.10) + (totalStuds * 0.01);
+
+    return { totalStuds, totalWeight, colorCounts, estimatedPrice };
+  };
+
+  const stats = calculateStats();
+
   return (
     <div className="w-full h-screen bg-retro-bg relative overflow-hidden scanlines font-mono text-slate-200">
       
@@ -99,6 +154,8 @@ const App: React.FC = () => {
           lockedLayer={lockedLayer}
           setLockedLayer={setLockedLayer}
           definitions={brickDefinitions}
+          sceneActionRef={sceneActionRef}
+          isExploding={isExploding}
         />
       </div>
 
@@ -106,7 +163,7 @@ const App: React.FC = () => {
       <div className="absolute top-4 left-4 pointer-events-none select-none z-10">
         <div className="text-retro-cyan text-xs opacity-70 bg-black/40 p-2 rounded border border-retro-accent/50 backdrop-blur-sm">
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"/> 
+            <div className={`w-2 h-2 bg-red-500 rounded-full ${isExploding ? 'animate-ping' : 'animate-pulse'}`}/> 
             <span>LIVE FEED</span>
           </div>
           CAM_X: 124.55<br/>
@@ -129,6 +186,9 @@ const App: React.FC = () => {
         onGenerateChallenge={handleGenerateChallenge}
         onToggleHelp={() => setShowHelp(true)}
         onOpenCreator={() => setShowCreator(true)}
+        onTakeSnapshot={handleTakeSnapshot}
+        onToggleStats={() => setShowStats(true)}
+        onExplode={handleExplode}
         isLoading={isGenerating}
         definitions={brickDefinitions}
       />
@@ -203,6 +263,95 @@ const App: React.FC = () => {
                 </div>
               </div>
            </div>
+        </div>
+      )}
+
+      {/* Snapshot Modal (Polaroid Style) */}
+      {snapshotImg && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="relative animate-in fade-in zoom-in duration-300">
+            <button 
+              onClick={() => setSnapshotImg(null)}
+              className="absolute -top-10 right-0 text-white hover:text-retro-neon"
+            >
+              <X size={32} />
+            </button>
+            <div className="bg-white p-4 pb-16 shadow-2xl rotate-1 hover:rotate-0 transition-transform duration-500 max-w-lg">
+              <div className="bg-black aspect-square w-full overflow-hidden border-2 border-gray-200">
+                <img src={snapshotImg} alt="LEGO Build" className="w-full h-full object-cover" />
+              </div>
+              <div className="mt-4 flex justify-between items-end font-handwriting">
+                 <div>
+                   <p className="text-black font-bold text-xl font-serif italic">My Creation</p>
+                   <p className="text-gray-500 text-sm font-mono">{new Date().toLocaleDateString()}</p>
+                 </div>
+                 <a 
+                   href={snapshotImg} 
+                   download={`brickmaster-${Date.now()}.png`}
+                   className="text-slate-400 hover:text-black"
+                   title="Save to Disk"
+                 >
+                   <Download size={24} />
+                 </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stats Modal (Retro Terminal) */}
+      {showStats && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-black border-2 border-green-500 p-1 w-full max-w-md font-mono shadow-[0_0_20px_rgba(34,197,94,0.3)]">
+             <div className="border border-green-900 p-6 relative bg-green-950/20">
+               <button 
+                 onClick={() => setShowStats(false)}
+                 className="absolute top-2 right-2 text-green-500 hover:text-white"
+               >
+                 <X size={20} />
+               </button>
+               
+               <div className="flex items-center gap-2 mb-4 border-b border-green-500 pb-2">
+                 <HardDrive className="text-green-500" />
+                 <h2 className="text-xl text-green-500 font-bold uppercase tracking-widest">Data Analyzer</h2>
+               </div>
+
+               <div className="space-y-4 text-green-400 text-sm">
+                 <div className="flex justify-between">
+                   <span>TOTAL_BRICKS:</span>
+                   <span className="font-bold">{bricks.length}</span>
+                 </div>
+                 <div className="flex justify-between">
+                   <span>TOTAL_STUDS:</span>
+                   <span className="font-bold">{stats.totalStuds}</span>
+                 </div>
+                 <div className="flex justify-between">
+                   <span>NET_WEIGHT (est):</span>
+                   <span className="font-bold">{stats.totalWeight.toFixed(1)}g</span>
+                 </div>
+                 <div className="flex justify-between text-green-300 border-t border-green-800 pt-2 mt-2">
+                   <span>MARKET_VAL (1999):</span>
+                   <span className="font-bold">${stats.estimatedPrice.toFixed(2)}</span>
+                 </div>
+                 
+                 <div className="mt-4">
+                   <p className="mb-2 uppercase text-xs text-green-600">Composition:</p>
+                   <div className="h-24 overflow-y-auto pr-2 custom-scrollbar-green">
+                     {Object.entries(stats.colorCounts).map(([color, count]) => (
+                       <div key={color} className="flex justify-between text-xs opacity-80">
+                         <div className="flex items-center gap-2">
+                           <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: color }}></div>
+                           <span>{LEGO_COLORS.find(c => c.hex === color)?.name || color}</span>
+                         </div>
+                         <span>x{count}</span>
+                       </div>
+                     ))}
+                   </div>
+                 </div>
+               </div>
+
+             </div>
+          </div>
         </div>
       )}
 
