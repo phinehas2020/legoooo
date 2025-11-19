@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Scene from './components/Scene';
 import Toolbar from './components/Toolbar';
 import { BrickData, BrickType, ToolMode, Challenge, BrickDims } from './types';
@@ -10,6 +10,7 @@ import { playSound } from './utils/audio';
 
 const App: React.FC = () => {
   const [bricks, setBricks] = useState<BrickData[]>([]);
+  const [history, setHistory] = useState<BrickData[][]>([]);
   const [brickDefinitions, setBrickDefinitions] = useState<Record<string, BrickDims>>(DEFAULT_BRICK_DEFINITIONS);
   const [selectedBrickType, setSelectedBrickType] = useState<BrickType>(BrickType.TWO_BY_FOUR);
   const [selectedColor, setSelectedColor] = useState<string>(LEGO_COLORS[0].hex);
@@ -36,6 +37,42 @@ const App: React.FC = () => {
   const [newPieceDepth, setNewPieceDepth] = useState(4);
   const [newPieceStyle, setNewPieceStyle] = useState<'brick' | 'plate' | 'tile'>('brick');
 
+  // Wrapper for setBricks that saves history
+  // We depend on 'bricks' here to capture the exact state before modification
+  const handleSetBricks = useCallback((action: React.SetStateAction<BrickData[]>) => {
+    const newState = typeof action === 'function' ? (action as Function)(bricks) : action;
+    
+    // Only save history if state actually changes
+    if (newState !== bricks) {
+      setHistory(prev => [...prev, bricks]);
+      setBricks(newState);
+    }
+  }, [bricks]);
+
+  // Undo Listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (isExploding) return;
+
+        setHistory(currentHistory => {
+          if (currentHistory.length > 0) {
+            const previousState = currentHistory[currentHistory.length - 1];
+            // We set bricks directly here to avoid pushing the undo action itself to history
+            setBricks(previousState);
+            playSound('delete'); // Feedback sound
+            return currentHistory.slice(0, -1);
+          }
+          return currentHistory;
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isExploding]);
+
   const handleGenerateChallenge = async () => {
     setIsGenerating(true);
     try {
@@ -56,7 +93,7 @@ const App: React.FC = () => {
     playSound('explode');
     setIsExploding(true);
     setTimeout(() => {
-      setBricks([]);
+      handleSetBricks([]); // Uses wrapper to ensure we can undo the explosion
       setIsExploding(false);
       setLockedLayer(null);
     }, 1500); // Clear after animation
@@ -147,7 +184,7 @@ const App: React.FC = () => {
       <div className="absolute inset-0 z-0">
         <Scene 
           bricks={bricks} 
-          setBricks={setBricks}
+          setBricks={handleSetBricks}
           selectedColor={selectedColor}
           selectedBrickType={selectedBrickType}
           toolMode={toolMode}
@@ -238,6 +275,16 @@ const App: React.FC = () => {
                       <div className="text-retro-cyan font-bold uppercase text-sm">Nudge Position</div>
                        <div className="text-xs text-slate-400 mb-1">Use <span className="text-white font-bold">W / A / S / D</span> to move piece.</div>
                        <div className="text-xs text-slate-400">Hold <span className="text-white font-bold">SHIFT</span> + W/S to adjust height.</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 border border-slate-600 rounded flex items-center justify-center bg-slate-800">
+                      <RotateCw className="text-retro-neon rotate-180"/>
+                    </div>
+                    <div>
+                      <div className="text-retro-neon font-bold uppercase text-sm">Undo Action</div>
+                      <div className="text-xs text-slate-400">Press <span className="text-white font-bold">CMD + Z</span> or <span className="text-white font-bold">CTRL + Z</span>.</div>
                     </div>
                   </div>
                   
@@ -438,72 +485,53 @@ const App: React.FC = () => {
                     <div className="text-[10px] text-slate-500 mt-1 text-center">
                       {newPieceStyle === 'brick' && "Standard Height (1.2)"}
                       {newPieceStyle === 'plate' && "Low Profile (0.4)"}
-                      {newPieceStyle === 'tile' && "Low Profile (0.4) - No Studs"}
+                      {newPieceStyle === 'tile' && "Smooth Top (0.4)"}
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-700 mt-4">
-                    <button 
-                      type="submit"
-                      className="w-full py-3 bg-retro-yellow text-black font-bold uppercase tracking-widest hover:bg-white hover:scale-105 transition-all flex items-center justify-center gap-2"
-                    >
-                      <Save size={18} /> Fabricate
-                    </button>
-                  </div>
-
+                  <button 
+                    type="submit"
+                    className="w-full py-3 bg-retro-yellow text-black font-bold uppercase tracking-widest border-b-4 border-yellow-700 hover:bg-white hover:border-slate-300 active:translate-y-1 active:border-b-0 transition-all"
+                  >
+                    Fabricate
+                  </button>
                 </form>
               </div>
            </div>
         </div>
       )}
-
+      
       {/* Challenge Modal */}
       {showChallenge && challenge && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-retro-panel border-2 border-retro-neon p-1 w-full max-w-lg shadow-[0_0_30px_rgba(233,69,96,0.3)] transform transition-all scale-100">
-            <div className="border border-retro-neon/50 p-6 relative">
-              
-              <button 
-                onClick={() => setShowChallenge(false)}
-                className="absolute top-2 right-2 text-retro-cyan hover:text-white"
-              >
-                <X size={24} />
-              </button>
+         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+            <div className="bg-retro-panel border-2 border-retro-neon p-6 max-w-md w-full shadow-[0_0_50px_rgba(233,69,96,0.3)]">
+               <div className="flex justify-between items-start mb-4">
+                 <h2 className="text-2xl font-bold text-retro-neon tracking-widest uppercase">{challenge.title}</h2>
+                 <button onClick={() => setShowChallenge(false)} className="text-slate-400 hover:text-white"><X /></button>
+               </div>
+               
+               <p className="text-slate-300 mb-6 italic">"{challenge.description}"</p>
+               
+               <div className="space-y-3 mb-6">
+                 <div className="text-xs uppercase text-retro-cyan font-bold">Directives:</div>
+                 {challenge.steps.map((step, i) => (
+                   <div key={i} className="flex gap-3 text-sm text-slate-300">
+                     <span className="text-retro-yellow font-bold">0{i+1}.</span>
+                     <span>{step}</span>
+                   </div>
+                 ))}
+               </div>
 
-              <h2 className="text-2xl text-retro-yellow font-bold mb-2 uppercase tracking-widest border-b border-retro-neon/30 pb-2">
-                {challenge.title}
-              </h2>
-              
-              <p className="text-slate-300 mb-6 leading-relaxed italic">
-                "{challenge.description}"
-              </p>
-
-              <div className="space-y-4">
-                <h3 className="text-retro-cyan uppercase text-sm tracking-wider">Mission Directives:</h3>
-                <ul className="space-y-3">
-                  {challenge.steps.map((step, idx) => (
-                    <li key={idx} className="flex gap-3 text-slate-200">
-                      <span className="text-retro-neon font-bold select-none">0{idx + 1}.</span>
-                      <span>{step}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="mt-8 text-center">
-                <button 
-                  onClick={() => setShowChallenge(false)}
-                  className="px-8 py-2 border border-retro-cyan text-retro-cyan hover:bg-retro-cyan hover:text-black transition-colors uppercase tracking-widest text-sm"
-                >
-                  Accept Mission
-                </button>
-              </div>
-
+               <button 
+                 onClick={() => setShowChallenge(false)}
+                 className="w-full py-3 bg-retro-neon text-white font-bold uppercase tracking-wider hover:bg-red-500 transition-colors"
+               >
+                 Accept Mission
+               </button>
             </div>
-          </div>
-        </div>
+         </div>
       )}
-      
+
     </div>
   );
 };

@@ -400,7 +400,6 @@ const Scene: React.FC<SceneProps> = ({
       <Canvas shadows gl={{ preserveDrawingBuffer: true }} camera={{ position: [10, 8, 10], fov: 45 }}>
         <ScreenshotHandler ref={sceneActionRef} />
         <color attach="background" args={['#1a1a2e']} />
-        <fog attach="fog" args={['#1a1a2e', 15, 45]} />
         
         <ambientLight intensity={0.7} />
         <pointLight position={[20, 30, 20]} intensity={1} castShadow />
@@ -428,7 +427,7 @@ const Scene: React.FC<SceneProps> = ({
           <planeGeometry args={[100, 100]} />
           <meshStandardMaterial color="#16213e" roughness={0.8} />
         </mesh>
-        <Grid position={[0, 0.01, 0]} args={[100, 100]} cellSize={1} cellThickness={0.6} cellColor="#e94560" sectionSize={5} sectionThickness={1.2} sectionColor="#00fff5" fadeDistance={40} />
+        <Grid position={[0, 0.01, 0]} args={[100, 100]} cellSize={1} cellThickness={0.6} cellColor="#e94560" sectionSize={5} sectionThickness={1.2} sectionColor="#00fff5" fadeDistance={90} />
 
         {bricks.map(brick => (
           <Brick3D 
