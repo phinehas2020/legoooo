@@ -1,14 +1,16 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Challenge } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
+// We initialize the client lazily inside the function to avoid top-level crashes
+// if process.env is accessed before it is defined in the browser environment.
 export const generateChallenge = async (theme: string): Promise<Challenge> => {
   try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: `Generate a nostalgic LEGO building challenge based on the theme: "${theme}". 
-      The theme might be something like "Space Police", "Castle", "Pirates", or "City".
+      The theme might be something like "Space Police", "Blacktron", "Castle", "Pirates", or "City".
       Provide a catchy 80s/90s style title, a short enthusiastic description, and 3 simple text-based steps to build it.
       Keep it simple enough for a small simulator.`,
       config: {

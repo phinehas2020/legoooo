@@ -6,6 +6,9 @@
     <title>BrickMaster 1999</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+      // Polyfill process for browser environments to prevent crashes with libraries expecting Node.js env
+      window.process = { env: { NODE_ENV: 'production' } };
+      
       tailwind.config = {
         theme: {
           extend: {
@@ -81,6 +84,7 @@
     "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
   }
 }
