@@ -414,6 +414,8 @@ const Scene: React.FC<SceneProps> = ({
           maxPolarAngle={Math.PI / 2 - 0.1} 
           enableDamping={true}
           dampingFactor={0.1}
+          minDistance={5}
+          maxDistance={80}
         />
 
         <mesh 
