@@ -49,9 +49,27 @@ const App: React.FC = () => {
     }
   }, [bricks]);
 
-  // Undo Listener
+  // Global Keyboard Shortcuts (Undo + Tools)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore shortcuts if user is typing in an input field (e.g. Creator modal)
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Tool Switching
+      if (e.key === '1') {
+        setToolMode(ToolMode.BUILD);
+        playSound('click');
+      } else if (e.key === '2') {
+        setToolMode(ToolMode.PAINT);
+        playSound('click');
+      } else if (e.key === '3') {
+        setToolMode(ToolMode.DELETE);
+        playSound('click');
+      }
+
+      // Undo Logic
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         if (isExploding) return;
@@ -252,7 +270,7 @@ const App: React.FC = () => {
                       <MousePointer2 className="text-retro-yellow"/>
                     </div>
                     <div>
-                      <div className="text-retro-yellow font-bold uppercase text-sm">Place Brick</div>
+                      <div className="text-retro-yellow font-bold uppercase text-sm">Place Brick (1)</div>
                       <div className="text-xs text-slate-400">Click on grid or bricks. Or press <span className="text-white font-bold">ENTER</span>.</div>
                     </div>
                   </div>

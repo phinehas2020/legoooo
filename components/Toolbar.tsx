@@ -138,7 +138,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 setToolMode(ToolMode.BUILD);
               }}
               className={`p-3 rounded border-2 flex justify-center items-center transition-all ${toolMode === ToolMode.BUILD ? 'border-retro-yellow bg-retro-accent text-retro-yellow shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 'border-slate-600 text-slate-400 hover:border-retro-cyan'}`}
-              title="Build Mode"
+              title="Build Mode (1)"
             >
               <MousePointer2 size={20} />
             </button>
@@ -148,7 +148,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 setToolMode(ToolMode.PAINT);
               }}
               className={`p-3 rounded border-2 flex justify-center items-center transition-all ${toolMode === ToolMode.PAINT ? 'border-retro-yellow bg-retro-accent text-retro-yellow shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 'border-slate-600 text-slate-400 hover:border-retro-cyan'}`}
-              title="Paint Mode"
+              title="Paint Mode (2)"
             >
               <PaintBucket size={20} />
             </button>
@@ -158,7 +158,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 setToolMode(ToolMode.DELETE);
               }}
               className={`p-3 rounded border-2 flex justify-center items-center transition-all ${toolMode === ToolMode.DELETE ? 'border-retro-neon bg-red-900/30 text-retro-neon shadow-[0_0_10px_rgba(233,69,96,0.5)]' : 'border-slate-600 text-slate-400 hover:border-retro-neon'}`}
-              title="Delete Mode"
+              title="Delete Mode (3)"
             >
               <Trash2 size={20} />
             </button>
