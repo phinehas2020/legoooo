@@ -44,21 +44,29 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
   const baseplates = allKeys.filter(key => key.toLowerCase().includes('baseplate'));
   
+  const openings = allKeys.filter(key => 
+    key.toLowerCase().includes('window') || 
+    key.toLowerCase().includes('door')
+  );
+
   const tiles = allKeys.filter(key => 
     !baseplates.includes(key) && 
+    !openings.includes(key) &&
     key.toLowerCase().includes('tile')
   );
   
   const plates = allKeys.filter(key => 
     !baseplates.includes(key) && 
     !tiles.includes(key) && 
+    !openings.includes(key) &&
     key.toLowerCase().includes('plate')
   );
   
   const bricks = allKeys.filter(key => 
     !baseplates.includes(key) && 
     !tiles.includes(key) && 
-    !plates.includes(key)
+    !plates.includes(key) &&
+    !openings.includes(key)
   );
 
   const renderBrickButton = (type: string) => (
@@ -78,6 +86,11 @@ const Toolbar: React.FC<ToolbarProps> = ({
              className="h-2 rounded-full bg-current opacity-50 group-hover:opacity-100"
              style={{ width: '8px', height: '8px' }}
            ></div>
+         ) : definitions[type].shape === 'window' || definitions[type].shape === 'door' ? (
+            <div 
+              className="h-2 border-2 border-current opacity-50 group-hover:opacity-100"
+              style={{ width: '16px', height: '12px' }}
+            ></div>
          ) : (
            <div 
             className={`h-1.5 bg-current opacity-50 rounded-sm group-hover:opacity-100 ${definitions[type].height < 1 ? 'h-1' : 'h-2'}`}
@@ -210,6 +223,16 @@ const Toolbar: React.FC<ToolbarProps> = ({
               {bricks.map(renderBrickButton)}
             </div>
           </div>
+
+          {/* Windows Section */}
+          {openings.length > 0 && (
+             <div>
+              <h3 className="text-xs text-slate-500 mb-2 uppercase tracking-wider">Doors & Windows</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {openings.map(renderBrickButton)}
+              </div>
+            </div>
+          )}
 
           {/* Plates Section */}
           <div>

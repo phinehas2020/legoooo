@@ -5,7 +5,7 @@ import Toolbar from './components/Toolbar';
 import { BrickData, BrickType, ToolMode, Challenge, BrickDims } from './types';
 import { LEGO_COLORS, DEFAULT_BRICK_DEFINITIONS, BRICK_HEIGHT, PLATE_HEIGHT, STUD_SIZE } from './constants';
 import { generateChallenge } from './services/geminiService';
-import { X, MousePointer2, RotateCw, Move, ChevronUp, Save, Download, HardDrive } from 'lucide-react';
+import { X, MousePointer2, RotateCw, Move, ChevronUp, Save, Download, HardDrive, Camera } from 'lucide-react';
 import { playSound } from './utils/audio';
 
 const App: React.FC = () => {
@@ -216,7 +216,7 @@ const App: React.FC = () => {
                     </div>
                     <div>
                       <div className="text-retro-yellow font-bold uppercase text-sm">Place Brick</div>
-                      <div className="text-xs text-slate-400">Select "Build" tool. Click on grid or bricks.</div>
+                      <div className="text-xs text-slate-400">Click on grid or bricks. Or press <span className="text-white font-bold">ENTER</span>.</div>
                     </div>
                   </div>
 
@@ -232,23 +232,22 @@ const App: React.FC = () => {
 
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 border border-slate-600 rounded flex items-center justify-center bg-slate-800">
-                      <ChevronUp className="text-retro-cyan"/>
+                      <Move className="text-retro-cyan"/>
                     </div>
                     <div>
-                      <div className="text-retro-cyan font-bold uppercase text-sm">Lock Height</div>
-                      <div className="text-xs text-slate-400">
-                        Press <span className="text-white font-bold border border-slate-500 px-1 rounded">W</span> / <span className="text-white font-bold border border-slate-500 px-1 rounded">S</span> to lock current plane and move up/down.
-                      </div>
+                      <div className="text-retro-cyan font-bold uppercase text-sm">Nudge Position</div>
+                       <div className="text-xs text-slate-400 mb-1">Use <span className="text-white font-bold">W / A / S / D</span> to move piece.</div>
+                       <div className="text-xs text-slate-400">Hold <span className="text-white font-bold">SHIFT</span> + W/S to adjust height.</div>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 border border-slate-600 rounded flex items-center justify-center bg-slate-800">
-                      <Move className="text-slate-300"/>
+                      <Camera className="text-slate-300"/>
                     </div>
                     <div>
-                      <div className="text-slate-300 font-bold uppercase text-sm">Camera Control</div>
-                      <div className="text-xs text-slate-400">Left-click + Drag to Rotate. Scroll to Zoom.</div>
+                      <div className="text-slate-300 font-bold uppercase text-sm">View Control</div>
+                       <div className="text-xs text-slate-400">Left-click + Drag to Rotate. Scroll to Zoom.</div>
                     </div>
                   </div>
                 </div>

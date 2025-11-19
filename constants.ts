@@ -25,6 +25,14 @@ export const DEFAULT_BRICK_DEFINITIONS: Record<string, BrickDims> = {
   // Round Bricks
   [BrickType.ROUND_BRICK_1x1]: { width: 1, depth: 1, height: BRICK_HEIGHT, label: 'Round 1 x 1', shape: 'cylinder' },
 
+  // Windows
+  [BrickType.WINDOW_1x2x2]: { width: 2, depth: 1, height: BRICK_HEIGHT * 2, label: 'Window 1 x 2 x 2', shape: 'window' },
+  [BrickType.WINDOW_1x2x3]: { width: 2, depth: 1, height: BRICK_HEIGHT * 3, label: 'Window 1 x 2 x 3', shape: 'window' },
+  [BrickType.WINDOW_1x4x3]: { width: 4, depth: 1, height: BRICK_HEIGHT * 3, label: 'Window 1 x 4 x 3', shape: 'window' },
+  
+  // Doors
+  [BrickType.DOOR_1x4x6]: { width: 4, depth: 1, height: BRICK_HEIGHT * 5, label: 'Door 1 x 4 x 5', shape: 'door' },
+
   // Plates
   [BrickType.PLATE_1x1]: { width: 1, depth: 1, height: PLATE_HEIGHT, label: 'Plate 1 x 1' },
   [BrickType.PLATE_1x2]: { width: 1, depth: 2, height: PLATE_HEIGHT, label: 'Plate 1 x 2' },

@@ -36,6 +36,12 @@ export const BrickType = {
   // Round Tiles
   ROUND_TILE_1x1: 'round_tile_1x1',
 
+  // Windows & Doors
+  WINDOW_1x2x2: 'window_1x2x2',
+  WINDOW_1x2x3: 'window_1x2x3',
+  WINDOW_1x4x3: 'window_1x4x3',
+  DOOR_1x4x6: 'door_1x4x6',
+
   // Baseplates
   BASEPLATE_16x16: 'baseplate_16x16',
   BASEPLATE_32x32: 'baseplate_32x32',
@@ -50,7 +56,7 @@ export interface BrickDims {
   height: number; // in units
   label: string;
   hasStuds?: boolean; // defaults to true
-  shape?: 'box' | 'cylinder'; // defaults to box
+  shape?: 'box' | 'cylinder' | 'window' | 'door'; // defaults to box
 }
 
 export interface BrickData {

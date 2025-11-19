@@ -50,54 +50,138 @@ const Scene: React.FC<SceneProps> = ({
 }) => {
   const [hoverPos, setHoverPos] = useState<[number, number, number] | null>(null);
   const [rotationIndex, setRotationIndex] = useState(0); // 0: 0deg, 1: 90deg
+  const [manualOffset, setManualOffset] = useState<{x: number, z: number}>({x: 0, z: 0});
   
   // Store the last raycast hit to re-calculate position when keys are pressed
   const lastHitRef = useRef<{ point: THREE.Vector3, normal: THREE.Vector3, objectName: string } | null>(null);
   // Keep track of the ghost's Y so we can start a lock from current position
   const currentGhostY = useRef<number>(0);
 
+  // Ref for OrbitControls
+  const controlsRef = useRef<any>(null);
+
   // Extrapolation state
   const lastValidBrickHit = useRef<{ point: THREE.Vector3, ghostY: number } | null>(null);
 
-  // Handle key press for rotation and height offset
+  // Ref to hold current state for event listeners so we don't need to re-bind them
+  const stateRef = useRef({
+    toolMode,
+    hoverPos,
+    selectedBrickType,
+    rotationIndex,
+    selectedColor,
+    isExploding
+  });
+
+  useEffect(() => {
+    stateRef.current = {
+      toolMode,
+      hoverPos,
+      selectedBrickType,
+      rotationIndex,
+      selectedColor,
+      isExploding
+    };
+  }, [toolMode, hoverPos, selectedBrickType, rotationIndex, selectedColor, isExploding]);
+
+  // Reset offset when tool changes
+  useEffect(() => {
+    setManualOffset({x: 0, z: 0});
+  }, [toolMode]);
+
+  // Handle key press for rotation, height offset, position nudge, and placement
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // --- BRICK ROTATION ---
       if (e.key === 'r' || e.key === 'R') {
         setRotationIndex(prev => (prev + 1) % 2);
         playSound('click');
       }
       
       const STEP = PLATE_HEIGHT;
+      const shift = e.shiftKey;
 
+      // --- MOVEMENT & HEIGHT CONTROL ---
+      
+      // W Key
       if (e.key === 'w' || e.key === 'W') {
-        setLockedLayer(prev => {
-          if (prev === null) {
-            // Start lock from current ghost position + 1 step
-            return currentGhostY.current + STEP;
-          }
-          return prev + STEP;
-        });
-        playSound('click');
+        if (shift) {
+          // Shift + W: Move Layer UP
+          setLockedLayer(prev => {
+            if (prev === null) {
+              return currentGhostY.current + STEP;
+            }
+            return prev + STEP;
+          });
+          playSound('click');
+        } else {
+          // W: Move Piece Forward (-Z)
+          setManualOffset(prev => ({ ...prev, z: prev.z - 1 }));
+          playSound('click');
+        }
       }
+
+      // S Key
       if (e.key === 's' || e.key === 'S') {
-         setLockedLayer(prev => {
-          if (prev === null) {
-            // Start lock from current ghost position - 1 step
-            return currentGhostY.current - STEP;
-          }
-          return prev - STEP;
-        });
+        if (shift) {
+           // Shift + S: Move Layer DOWN
+           setLockedLayer(prev => {
+            if (prev === null) {
+              return currentGhostY.current - STEP;
+            }
+            return prev - STEP;
+          });
+          playSound('click');
+        } else {
+           // S: Move Piece Backward (+Z)
+           setManualOffset(prev => ({ ...prev, z: prev.z + 1 }));
+           playSound('click');
+        }
+      }
+
+      // A Key: Move Left (-X)
+      if (e.key === 'a' || e.key === 'A') {
+        setManualOffset(prev => ({ ...prev, x: prev.x - 1 }));
         playSound('click');
       }
+
+      // D Key: Move Right (+X)
+      if (e.key === 'd' || e.key === 'D') {
+        setManualOffset(prev => ({ ...prev, x: prev.x + 1 }));
+        playSound('click');
+      }
+
+      // ENTER Key: Place Brick
+      if (e.key === 'Enter') {
+        const { toolMode, hoverPos, selectedBrickType, rotationIndex, selectedColor, isExploding } = stateRef.current;
+        
+        if (!isExploding && toolMode === ToolMode.BUILD && hoverPos) {
+          playSound('place');
+          const newBrick: BrickData = {
+            id: uuidv4(),
+            type: selectedBrickType,
+            position: hoverPos,
+            rotation: rotationIndex,
+            color: selectedColor
+          };
+          setBricks(prev => [...prev, newBrick]);
+          
+          // Reset offsets after placement
+          setLockedLayer(null);
+          setManualOffset({x: 0, z: 0});
+        }
+      }
+
       if (e.key === 'Escape') {
         setLockedLayer(null);
+        setManualOffset({x: 0, z: 0});
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [setLockedLayer]);
+  }, [setLockedLayer, setBricks]);
 
-  // Core logic to calculate where the brick should go
+  // Core logic to calculate where the brick should go based on RAYCAST
   const calculateGhostPosition = (
     point: THREE.Vector3, 
     normal: THREE.Vector3, 
@@ -171,17 +255,27 @@ const Scene: React.FC<SceneProps> = ({
     return [finalX, finalY, finalZ];
   };
 
-  // Effect to update ghost
+  // Effect to update ghost when state changes
   useEffect(() => {
     if (lastHitRef.current && toolMode === ToolMode.BUILD && !isExploding) {
       const { point, normal, objectName } = lastHitRef.current;
-      const newPos = calculateGhostPosition(point, normal, objectName, selectedBrickType, rotationIndex, lockedLayer);
-      setHoverPos(newPos);
-      currentGhostY.current = newPos[1];
+      const basePos = calculateGhostPosition(point, normal, objectName, selectedBrickType, rotationIndex, lockedLayer);
+      
+      // Apply Manual Offset
+      const finalPos: [number, number, number] = [
+        basePos[0] + manualOffset.x * STUD_SIZE,
+        basePos[1],
+        basePos[2] + manualOffset.z * STUD_SIZE
+      ];
+
+      setHoverPos(finalPos);
+      currentGhostY.current = finalPos[1];
     } else {
+      // Only clear if we really don't have a hit, but sometimes we want to keep last valid pos?
+      // For now, standard behavior:
       setHoverPos(null);
     }
-  }, [rotationIndex, lockedLayer, selectedBrickType, toolMode, definitions, isExploding]);
+  }, [rotationIndex, lockedLayer, selectedBrickType, toolMode, definitions, isExploding, manualOffset]);
 
   const handlePointerMove = useCallback((e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
@@ -225,7 +319,7 @@ const Scene: React.FC<SceneProps> = ({
       objectName: hitObject 
     };
 
-    const pos = calculateGhostPosition(
+    const basePos = calculateGhostPosition(
       hitPoint, 
       hitNormal, 
       hitObject, 
@@ -234,14 +328,21 @@ const Scene: React.FC<SceneProps> = ({
       lockedLayer ?? overrideY 
     );
 
-    setHoverPos(pos);
-    currentGhostY.current = pos[1];
+    // Apply Manual Offset
+    const finalPos: [number, number, number] = [
+      basePos[0] + manualOffset.x * STUD_SIZE,
+      basePos[1],
+      basePos[2] + manualOffset.z * STUD_SIZE
+    ];
+
+    setHoverPos(finalPos);
+    currentGhostY.current = finalPos[1];
 
     // Update the validity cache
     if (e.object.name !== 'ground') {
        lastValidBrickHit.current = {
          point: e.point.clone(),
-         ghostY: pos[1]
+         ghostY: finalPos[1]
        };
     } else if (hitObject === 'extrapolated_plane') {
        // Keep current validity
@@ -249,7 +350,7 @@ const Scene: React.FC<SceneProps> = ({
       lastValidBrickHit.current = null;
     }
 
-  }, [toolMode, selectedBrickType, rotationIndex, lockedLayer, definitions, isExploding]);
+  }, [toolMode, selectedBrickType, rotationIndex, lockedLayer, definitions, isExploding, manualOffset]);
 
   const handleClick = (e: ThreeEvent<MouseEvent>, brickId?: string) => {
     if (isExploding) return;
@@ -281,6 +382,7 @@ const Scene: React.FC<SceneProps> = ({
       setBricks(prev => [...prev, newBrick]);
       
       setLockedLayer(null);
+      setManualOffset({x: 0, z: 0}); // Reset offset after placement
     }
   };
 
@@ -306,7 +408,14 @@ const Scene: React.FC<SceneProps> = ({
         
         <Environment preset="city" />
 
-        <OrbitControls makeDefault minPolarAngle={0} maxPolarAngle={Math.PI / 2 - 0.1} />
+        <OrbitControls 
+          ref={controlsRef}
+          makeDefault 
+          minPolarAngle={0} 
+          maxPolarAngle={Math.PI / 2 - 0.1} 
+          enableDamping={true}
+          dampingFactor={0.1}
+        />
 
         <mesh 
           name="ground" 
