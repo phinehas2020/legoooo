@@ -34,6 +34,8 @@ interface SceneProps {
   definitions: Record<string, BrickDims>;
   sceneActionRef: React.MutableRefObject<any>;
   isExploding: boolean;
+  symmetryMode: boolean;
+  environment: string;
 }
 
 const Scene: React.FC<SceneProps> = ({
@@ -46,7 +48,9 @@ const Scene: React.FC<SceneProps> = ({
   setLockedLayer,
   definitions,
   sceneActionRef,
-  isExploding
+  isExploding,
+  symmetryMode,
+  environment
 }) => {
   const [hoverPos, setHoverPos] = useState<[number, number, number] | null>(null);
   const [rotationIndex, setRotationIndex] = useState(0); // 0: 0deg, 1: 90deg
@@ -379,7 +383,20 @@ const Scene: React.FC<SceneProps> = ({
         rotation: rotationIndex,
         color: selectedColor
       };
-      setBricks(prev => [...prev, newBrick]);
+
+      const bricksToAdd = [newBrick];
+
+      if (symmetryMode && hoverPos[0] !== 0) {
+        bricksToAdd.push({
+          id: uuidv4(),
+          type: selectedBrickType,
+          position: [-hoverPos[0], hoverPos[1], hoverPos[2]],
+          rotation: rotationIndex,
+          color: selectedColor
+        });
+      }
+
+      setBricks(prev => [...prev, ...bricksToAdd]);
 
       setLockedLayer(null);
       setManualOffset({ x: 0, z: 0 }); // Reset offset after placement
@@ -392,6 +409,12 @@ const Scene: React.FC<SceneProps> = ({
     position: hoverPos,
     rotation: rotationIndex,
     color: selectedColor,
+  } : null;
+
+  const symmetryGhost = symmetryMode && ghost && ghost.position[0] !== 0 ? {
+    ...ghost,
+    id: 'ghost-symmetry',
+    position: [-ghost.position[0], ghost.position[1], ghost.position[2]] as [number, number, number]
   } : null;
 
   return (
@@ -407,7 +430,7 @@ const Scene: React.FC<SceneProps> = ({
         <pointLight position={[-10, 10, -10]} intensity={0.6} color="#38bdf8" />
         <pointLight position={[10, 5, -15]} intensity={0.4} color="#818cf8" />
 
-        <Environment preset="city" />
+        <Environment preset={environment as any} />
 
         <OrbitControls
           ref={controlsRef}
@@ -449,6 +472,7 @@ const Scene: React.FC<SceneProps> = ({
         ))}
 
         {ghost && <Brick3D data={ghost} definitions={definitions} isGhost />}
+        {symmetryGhost && <Brick3D data={symmetryGhost} definitions={definitions} isGhost />}
 
         <ContactShadows position={[0, 0.01, 0]} opacity={0.4} scale={40} blur={2} far={4} />
       </Canvas>

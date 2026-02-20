@@ -16,6 +16,9 @@ const App: React.FC = () => {
   const [toolMode, setToolMode] = useState<ToolMode>(ToolMode.BUILD);
   const [lockedLayer, setLockedLayer] = useState<number | null>(null);
 
+  const [symmetryMode, setSymmetryMode] = useState<boolean>(false);
+  const [environmentPreset, setEnvironmentPreset] = useState<string>('city');
+
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showChallenge, setShowChallenge] = useState(false);
@@ -165,6 +168,26 @@ const App: React.FC = () => {
     setNewPieceStyle('brick');
   };
 
+  const handleSaveLocal = () => {
+    playSound('click');
+    localStorage.setItem('brickmaster_save', JSON.stringify({ bricks, brickDefinitions }));
+    // Optional: Add a small toast or visual feedback here if desired
+  };
+
+  const handleLoadLocal = () => {
+    playSound('click');
+    const data = localStorage.getItem('brickmaster_save');
+    if (data) {
+      try {
+        const parsed = JSON.parse(data);
+        if (parsed.bricks) handleSetBricks(parsed.bricks);
+        if (parsed.brickDefinitions) setBrickDefinitions(parsed.brickDefinitions);
+      } catch (e) {
+        console.error("Failed to parse save data", e);
+      }
+    }
+  };
+
   // Stats Calculations
   const calculateStats = () => {
     let totalStuds = 0;
@@ -208,6 +231,8 @@ const App: React.FC = () => {
           definitions={brickDefinitions}
           sceneActionRef={sceneActionRef}
           isExploding={isExploding}
+          symmetryMode={symmetryMode}
+          environment={environmentPreset}
         />
       </div>
 
@@ -253,6 +278,12 @@ const App: React.FC = () => {
         onExplode={handleExplode}
         isLoading={isGenerating}
         definitions={brickDefinitions}
+        symmetryMode={symmetryMode}
+        setSymmetryMode={setSymmetryMode}
+        environmentPreset={environmentPreset}
+        setEnvironmentPreset={setEnvironmentPreset}
+        onSaveLocal={handleSaveLocal}
+        onLoadLocal={handleLoadLocal}
       />
 
       {/* Glass Modals Structure Helper */}
