@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BrickMaster 1999</title>
+    <title>BrickBuilder Pro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       // Polyfill process for browser environments to prevent crashes with libraries expecting Node.js env
@@ -13,65 +16,98 @@
         theme: {
           extend: {
             colors: {
-              retro: {
-                bg: '#1a1a2e',
-                panel: '#16213e',
-                accent: '#0f3460',
-                neon: '#e94560',
-                cyan: '#00fff5',
-                yellow: '#ffd700'
+              brand: {
+                50: '#f0f9ff',
+                100: '#e0f2fe',
+                200: '#bae6fd',
+                300: '#7dd3fc',
+                400: '#38bdf8',
+                500: '#0ea5e9',
+                600: '#0284c7',
+                700: '#0369a1',
+                800: '#075985',
+                900: '#0c4a6e',
+                950: '#082f49',
+              },
+              glass: {
+                light: 'rgba(255, 255, 255, 0.1)',
+                medium: 'rgba(255, 255, 255, 0.2)',
+                strong: 'rgba(255, 255, 255, 0.4)',
+                dark: 'rgba(15, 23, 42, 0.65)',
+                darker: 'rgba(15, 23, 42, 0.85)'
               }
             },
             fontFamily: {
-              mono: ['"Courier New"', 'Courier', 'monospace'],
+              sans: ['Outfit', 'sans-serif'],
+              display: ['Space Grotesk', 'sans-serif'],
+              mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+            },
+            animation: {
+              'float': 'float 6s ease-in-out infinite',
+              'pulse-glow': 'pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            },
+            keyframes: {
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-10px)' },
+              },
+              pulseGlow: {
+                '0%, 100%': { opacity: 1, boxShadow: '0 0 15px rgba(14, 165, 233, 0.5)' },
+                '50%': { opacity: .7, boxShadow: '0 0 5px rgba(14, 165, 233, 0.2)' },
+              }
             }
           }
         }
       }
     </script>
     <style>
-      body { margin: 0; overflow: hidden; background-color: #1a1a2e; color: #e94560; }
-      
-      /* Retro CRT Scanline Effect */
-      .scanlines::before {
-        content: " ";
-        display: block;
-        position: absolute;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        right: 0;
-        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-        z-index: 90;
-        background-size: 100% 2px, 3px 100%;
-        pointer-events: none;
+      body { 
+        margin: 0; 
+        overflow: hidden; 
+        background: radial-gradient(circle at 50% 120%, #1e293b 0%, #020617 100%); 
+        color: #f8fafc; 
+        font-family: 'Outfit', sans-serif;
       }
       
-      /* Subtle flicker animation for the whole screen */
-      .scanlines {
-        animation: flicker 0.15s infinite;
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.4); }
+
+      .glass-panel {
+        background: rgba(15, 23, 42, 0.65);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
       }
 
-      @keyframes flicker {
-        0% { opacity: 0.97; }
-        50% { opacity: 1.0; }
-        100% { opacity: 0.98; }
+      .btn-glass {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .btn-glass:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+      .btn-glass:active:not(:disabled) {
+        transform: translateY(0);
       }
 
-      /* Scrollbar styling */
-      ::-webkit-scrollbar {
-        width: 8px;
+      .btn-active {
+        background: linear-gradient(135deg, #0ea5e9, #6366f1);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4);
+        color: white;
       }
-      ::-webkit-scrollbar-track {
-        background: #1a1a2e; 
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #0f3460; 
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #e94560; 
-      }
+
+      .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
     </style>
   <script type="importmap">
 {
@@ -91,7 +127,7 @@
 </script>
 </head>
   <body>
-    <div id="root"></div>
+    <div id="root" class="w-full h-screen"></div>
     <script type="module" src="./index.tsx"></script>
   </body>
 </html>

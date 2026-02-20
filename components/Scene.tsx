@@ -13,7 +13,7 @@ import { playSound } from '../utils/audio';
 // Helper component to access the GL context for screenshots
 const ScreenshotHandler = forwardRef((props, ref) => {
   const { gl, scene, camera } = useThree();
-  
+
   useImperativeHandle(ref, () => ({
     capture: () => {
       gl.render(scene, camera);
@@ -36,11 +36,11 @@ interface SceneProps {
   isExploding: boolean;
 }
 
-const Scene: React.FC<SceneProps> = ({ 
-  bricks, 
-  setBricks, 
-  selectedColor, 
-  selectedBrickType, 
+const Scene: React.FC<SceneProps> = ({
+  bricks,
+  setBricks,
+  selectedColor,
+  selectedBrickType,
   toolMode,
   lockedLayer,
   setLockedLayer,
@@ -50,8 +50,8 @@ const Scene: React.FC<SceneProps> = ({
 }) => {
   const [hoverPos, setHoverPos] = useState<[number, number, number] | null>(null);
   const [rotationIndex, setRotationIndex] = useState(0); // 0: 0deg, 1: 90deg
-  const [manualOffset, setManualOffset] = useState<{x: number, z: number}>({x: 0, z: 0});
-  
+  const [manualOffset, setManualOffset] = useState<{ x: number, z: number }>({ x: 0, z: 0 });
+
   // Store the last raycast hit to re-calculate position when keys are pressed
   const lastHitRef = useRef<{ point: THREE.Vector3, normal: THREE.Vector3, objectName: string } | null>(null);
   // Keep track of the ghost's Y so we can start a lock from current position
@@ -86,7 +86,7 @@ const Scene: React.FC<SceneProps> = ({
 
   // Reset offset when tool changes
   useEffect(() => {
-    setManualOffset({x: 0, z: 0});
+    setManualOffset({ x: 0, z: 0 });
   }, [toolMode]);
 
   // Handle key press for rotation, height offset, position nudge, and placement
@@ -97,12 +97,12 @@ const Scene: React.FC<SceneProps> = ({
         setRotationIndex(prev => (prev + 1) % 2);
         playSound('click');
       }
-      
+
       const STEP = PLATE_HEIGHT;
       const shift = e.shiftKey;
 
       // --- MOVEMENT & HEIGHT CONTROL ---
-      
+
       // W Key
       if (e.key === 'w' || e.key === 'W') {
         if (shift) {
@@ -124,8 +124,8 @@ const Scene: React.FC<SceneProps> = ({
       // S Key
       if (e.key === 's' || e.key === 'S') {
         if (shift) {
-           // Shift + S: Move Layer DOWN
-           setLockedLayer(prev => {
+          // Shift + S: Move Layer DOWN
+          setLockedLayer(prev => {
             if (prev === null) {
               return currentGhostY.current - STEP;
             }
@@ -133,9 +133,9 @@ const Scene: React.FC<SceneProps> = ({
           });
           playSound('click');
         } else {
-           // S: Move Piece Backward (+Z)
-           setManualOffset(prev => ({ ...prev, z: prev.z + 1 }));
-           playSound('click');
+          // S: Move Piece Backward (+Z)
+          setManualOffset(prev => ({ ...prev, z: prev.z + 1 }));
+          playSound('click');
         }
       }
 
@@ -154,7 +154,7 @@ const Scene: React.FC<SceneProps> = ({
       // ENTER Key: Place Brick
       if (e.key === 'Enter') {
         const { toolMode, hoverPos, selectedBrickType, rotationIndex, selectedColor, isExploding } = stateRef.current;
-        
+
         if (!isExploding && toolMode === ToolMode.BUILD && hoverPos) {
           playSound('place');
           const newBrick: BrickData = {
@@ -165,16 +165,16 @@ const Scene: React.FC<SceneProps> = ({
             color: selectedColor
           };
           setBricks(prev => [...prev, newBrick]);
-          
+
           // Reset offsets after placement
           setLockedLayer(null);
-          setManualOffset({x: 0, z: 0});
+          setManualOffset({ x: 0, z: 0 });
         }
       }
 
       if (e.key === 'Escape') {
         setLockedLayer(null);
-        setManualOffset({x: 0, z: 0});
+        setManualOffset({ x: 0, z: 0 });
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -183,8 +183,8 @@ const Scene: React.FC<SceneProps> = ({
 
   // Core logic to calculate where the brick should go based on RAYCAST
   const calculateGhostPosition = (
-    point: THREE.Vector3, 
-    normal: THREE.Vector3, 
+    point: THREE.Vector3,
+    normal: THREE.Vector3,
     objectName: string,
     bType: BrickType,
     rot: number,
@@ -195,7 +195,7 @@ const Scene: React.FC<SceneProps> = ({
     const z = point.z;
 
     const def = definitions[bType];
-    if (!def) return [x, y, z]; 
+    if (!def) return [x, y, z];
 
     const brickHeight = def.height;
     const isRotated = rot === 1;
@@ -205,7 +205,7 @@ const Scene: React.FC<SceneProps> = ({
     // Initial snapping
     const nextX = x + normal.x * (STUD_SIZE / 2);
     const nextZ = z + normal.z * (STUD_SIZE / 2);
-    
+
     let finalX = Math.round(nextX);
     let finalZ = Math.round(nextZ);
     let finalY = y;
@@ -226,7 +226,7 @@ const Scene: React.FC<SceneProps> = ({
           // Stacking ON TOP
           const nearestFlat = Math.round(y / PLATE_HEIGHT) * PLATE_HEIGHT;
           const nearestStud = (Math.round((y - STUD_HEIGHT) / PLATE_HEIGHT) * PLATE_HEIGHT) + STUD_HEIGHT;
-          
+
           if (Math.abs(y - nearestStud) < Math.abs(y - nearestFlat)) {
             finalY = (y - STUD_HEIGHT) + brickHeight / 2;
           } else {
@@ -260,7 +260,7 @@ const Scene: React.FC<SceneProps> = ({
     if (lastHitRef.current && toolMode === ToolMode.BUILD && !isExploding) {
       const { point, normal, objectName } = lastHitRef.current;
       const basePos = calculateGhostPosition(point, normal, objectName, selectedBrickType, rotationIndex, lockedLayer);
-      
+
       // Apply Manual Offset
       const finalPos: [number, number, number] = [
         basePos[0] + manualOffset.x * STUD_SIZE,
@@ -279,7 +279,7 @@ const Scene: React.FC<SceneProps> = ({
 
   const handlePointerMove = useCallback((e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
-    
+
     if (toolMode !== ToolMode.BUILD || isExploding) {
       setHoverPos(null);
       lastHitRef.current = null;
@@ -295,7 +295,7 @@ const Scene: React.FC<SceneProps> = ({
     if (hitObject === 'ground' && lastValidBrickHit.current) {
       const lastHit = lastValidBrickHit.current;
       const ray = e.ray;
-      
+
       const planeY = lastHit.ghostY;
       const t = (planeY - ray.origin.y) / ray.direction.y;
 
@@ -305,27 +305,27 @@ const Scene: React.FC<SceneProps> = ({
 
         if (dist < 3.0) {
           hitPoint = intersectPoint;
-          hitNormal = new THREE.Vector3(0, 1, 0); 
-          overrideY = planeY; 
-          hitObject = 'extrapolated_plane'; 
+          hitNormal = new THREE.Vector3(0, 1, 0);
+          overrideY = planeY;
+          hitObject = 'extrapolated_plane';
         }
       }
     }
 
     // Update ref
-    lastHitRef.current = { 
-      point: hitPoint, 
-      normal: hitNormal, 
-      objectName: hitObject 
+    lastHitRef.current = {
+      point: hitPoint,
+      normal: hitNormal,
+      objectName: hitObject
     };
 
     const basePos = calculateGhostPosition(
-      hitPoint, 
-      hitNormal, 
-      hitObject, 
-      selectedBrickType, 
-      rotationIndex, 
-      lockedLayer ?? overrideY 
+      hitPoint,
+      hitNormal,
+      hitObject,
+      selectedBrickType,
+      rotationIndex,
+      lockedLayer ?? overrideY
     );
 
     // Apply Manual Offset
@@ -340,12 +340,12 @@ const Scene: React.FC<SceneProps> = ({
 
     // Update the validity cache
     if (e.object.name !== 'ground') {
-       lastValidBrickHit.current = {
-         point: e.point.clone(),
-         ghostY: finalPos[1]
-       };
+      lastValidBrickHit.current = {
+        point: e.point.clone(),
+        ghostY: finalPos[1]
+      };
     } else if (hitObject === 'extrapolated_plane') {
-       // Keep current validity
+      // Keep current validity
     } else {
       lastValidBrickHit.current = null;
     }
@@ -380,9 +380,9 @@ const Scene: React.FC<SceneProps> = ({
         color: selectedColor
       };
       setBricks(prev => [...prev, newBrick]);
-      
+
       setLockedLayer(null);
-      setManualOffset({x: 0, z: 0}); // Reset offset after placement
+      setManualOffset({ x: 0, z: 0 }); // Reset offset after placement
     }
   };
 
@@ -397,49 +397,51 @@ const Scene: React.FC<SceneProps> = ({
   return (
     <div className="w-full h-full cursor-crosshair">
       {/* preserveDrawingBuffer required for screenshot capture */}
-      <Canvas shadows gl={{ preserveDrawingBuffer: true }} camera={{ position: [10, 8, 10], fov: 45 }}>
+      <Canvas shadows gl={{ preserveDrawingBuffer: true, antialias: true }} camera={{ position: [10, 8, 10], fov: 45 }}>
         <ScreenshotHandler ref={sceneActionRef} />
-        <color attach="background" args={['#1a1a2e']} />
-        
-        <ambientLight intensity={0.7} />
-        <pointLight position={[20, 30, 20]} intensity={1} castShadow />
-        <pointLight position={[-10, 10, -10]} intensity={0.5} color="#00fff5" />
-        
+        {/* Remove the dark 'retro' background since index.html handles background with a nice gradient. 
+            Note that Canvas creates its own stacking context, but setting alpha: true allows seeing through, 
+            which is already the default if no color attach is given. Let's remove color attach. */}
+        <ambientLight intensity={0.9} color="#f8fafc" />
+        <pointLight position={[20, 30, 20]} intensity={1.2} castShadow color="#ffffff" shadow-mapSize={[2048, 2048]} />
+        <pointLight position={[-10, 10, -10]} intensity={0.6} color="#38bdf8" />
+        <pointLight position={[10, 5, -15]} intensity={0.4} color="#818cf8" />
+
         <Environment preset="city" />
 
-        <OrbitControls 
+        <OrbitControls
           ref={controlsRef}
-          makeDefault 
-          minPolarAngle={0} 
-          maxPolarAngle={Math.PI / 2 - 0.1} 
+          makeDefault
+          minPolarAngle={0}
+          maxPolarAngle={Math.PI / 2 - 0.1}
           enableDamping={true}
           dampingFactor={0.1}
           minDistance={5}
           maxDistance={80}
         />
 
-        <mesh 
-          name="ground" 
-          rotation={[-Math.PI / 2, 0, 0]} 
-          position={[0, 0, 0]} 
+        <mesh
+          name="ground"
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[0, 0, 0]}
           receiveShadow
           onPointerMove={handlePointerMove}
           onClick={(e) => handleClick(e)}
         >
-          <planeGeometry args={[100, 100]} />
-          <meshStandardMaterial color="#16213e" roughness={0.8} />
+          <planeGeometry args={[150, 150]} />
+          <meshStandardMaterial color="#0f172a" roughness={0.9} />
         </mesh>
-        <Grid position={[0, 0.01, 0]} args={[100, 100]} cellSize={1} cellThickness={0.6} cellColor="#e94560" sectionSize={5} sectionThickness={1.2} sectionColor="#00fff5" fadeDistance={90} />
+        <Grid position={[0, 0.01, 0]} args={[150, 150]} cellSize={1} cellThickness={0.8} cellColor="#334155" sectionSize={5} sectionThickness={1.5} sectionColor="#475569" fadeDistance={100} fadeStrength={1} />
 
         {bricks.map(brick => (
-          <Brick3D 
-            key={brick.id} 
-            data={brick} 
+          <Brick3D
+            key={brick.id}
+            data={brick}
             definitions={definitions}
             onClick={handleClick}
             onPointerMove={handlePointerMove}
             onPointerOver={(e) => {
-              if(toolMode !== ToolMode.BUILD && !isExploding) document.body.style.cursor = 'pointer';
+              if (toolMode !== ToolMode.BUILD && !isExploding) document.body.style.cursor = 'pointer';
             }}
             onPointerOut={() => document.body.style.cursor = 'auto'}
             isExploding={isExploding}
@@ -447,7 +449,7 @@ const Scene: React.FC<SceneProps> = ({
         ))}
 
         {ghost && <Brick3D data={ghost} definitions={definitions} isGhost />}
-        
+
         <ContactShadows position={[0, 0.01, 0]} opacity={0.4} scale={40} blur={2} far={4} />
       </Canvas>
     </div>
